@@ -45,8 +45,8 @@ export default function Setup() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md mx-auto">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/20 text-3xl">
             🔐
@@ -54,7 +54,7 @@ export default function Setup() {
           <h1 className="text-2xl font-bold text-[var(--text)]">Kasanızı oluşturun</h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">Güçlü bir ana parola belirleyin</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-xl">
+        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl">
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">E-posta</label>
             <input
@@ -101,27 +101,30 @@ export default function Setup() {
               disabled={loading}
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Güvenlik sorusu</label>
-            <input
-              type="text"
-              value={recoveryQuestion}
-              onChange={(e) => setRecoveryQuestion(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
-              placeholder="Örn: İlk evcil hayvanınızın adı?"
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Cevabı</label>
-            <input
-              type="text"
-              value={recoveryAnswer}
-              onChange={(e) => setRecoveryAnswer(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
-              placeholder="Cevap"
-              disabled={loading}
-            />
+          <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider pt-1 border-t border-[var(--border)] mt-1">Kurtarma</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Güvenlik sorusu</label>
+              <input
+                type="text"
+                value={recoveryQuestion}
+                onChange={(e) => setRecoveryQuestion(e.target.value)}
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
+                placeholder="Örn: İlk evcil hayvanınızın adı?"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Cevabı</label>
+              <input
+                type="text"
+                value={recoveryAnswer}
+                onChange={(e) => setRecoveryAnswer(e.target.value)}
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
+                placeholder="Cevap"
+                disabled={loading}
+              />
+            </div>
           </div>
           {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
           <button
