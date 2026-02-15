@@ -1,0 +1,45 @@
+{
+  "name": "sfr-cloud-desktop",
+  "version": "1.0.0",
+  "description": "Şifre Kasası - Masaüstü uygulaması",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "node prepare-pack.js && electron-builder --dir",
+    "dist": "node prepare-pack.js && electron-builder",
+    "dist:win": "node prepare-pack.js && electron-builder --win"
+  },
+  "keywords": ["password", "vault", "electron"],
+  "author": "",
+  "license": "MIT",
+  "build": {
+    "appId": "com.sifrekasasi.app",
+    "productName": "Şifre Kasası",
+    "directories": {
+      "output": "dist"
+    },
+    "files": ["main.js"],
+    "extraResources": [
+      { "from": "pack-resources/backend", "to": "backend" },
+      { "from": "../web/dist", "to": "web-dist" }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg", "zip"]
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

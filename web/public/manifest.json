@@ -1,0 +1,10 @@
+{
+  "name": "Şifre Kasası",
+  "short_name": "Şifre Kasası",
+  "description": "Şifrelerinizi güvende tutun",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#6366f1",
+  "lang": "tr"
+}
