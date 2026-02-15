@@ -30,22 +30,27 @@ authRouter.post('/register', async (req, res) => {
     const recoveryAnswerHash = await argon2.hash(recoveryAnswer.trim(), { type: argon2.argon2id });
     const id = randomUUID();
     const now = Date.now();
-    db.prepare(`
-      INSERT INTO users (id, email, password_hash, salt, recovery_question, recovery_answer_hash, recovery_encrypted_key, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, email.toLowerCase().trim(), passwordHash, userSalt, recoveryQuestion.trim(), recoveryAnswerHash, recoveryEncryptedKey || null, now);
-
-    db.prepare(`
-      INSERT OR IGNORE INTO user_settings (user_id, keep_old_passwords, mask_in_list, security_lock_enabled, auto_lock_enabled)
-      VALUES (?, 0, 1, 0, 1)
-    `).run(id);
-
+    try {
+      await db.createUser({
+        id,
+        email: email.toLowerCase().trim(),
+        passwordHash,
+        salt: userSalt,
+        recoveryQuestion: recoveryQuestion.trim(),
+        recoveryAnswerHash,
+        recoveryEncryptedKey: recoveryEncryptedKey || null,
+        createdAt: now,
+      });
+    } catch (e) {
+      if (e.code === 6 || e.message?.includes('UNIQUE') || e.message?.includes('already exists')) {
+        return res.status(409).json({ error: 'Bu e-posta zaten kayıtlı.' });
+      }
+      throw e;
+    }
+    await db.createDefaultSettings(id);
     const token = signToken(id, email);
     return res.status(201).json({ token, userId: id, email: email.toLowerCase().trim(), salt: userSalt });
   } catch (e) {
-    if (e.message && e.message.includes('UNIQUE')) {
-      return res.status(409).json({ error: 'Bu e-posta zaten kayıtlı.' });
-    }
     console.error(e);
     return res.status(500).json({ error: 'Kayıt başarısız.' });
   }
@@ -57,7 +62,7 @@ authRouter.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'E-posta ve parola gerekli.' });
     }
-    const row = db.prepare('SELECT id, email, password_hash, salt, totp_secret FROM users WHERE email = ?').get(email.toLowerCase().trim());
+    const row = await db.getUserByEmail(email.toLowerCase().trim());
     if (!row) {
       return res.status(401).json({ error: 'E-posta veya parola hatalı.' });
     }
@@ -83,7 +88,7 @@ authRouter.post('/recovery/verify', async (req, res) => {
     if (!email || recoveryAnswer === undefined) {
       return res.status(400).json({ error: 'Eksik alan.' });
     }
-    const row = db.prepare('SELECT id, recovery_answer_hash, recovery_encrypted_key FROM users WHERE email = ?').get(email.toLowerCase().trim());
+    const row = await db.getUserByEmail(email.toLowerCase().trim());
     if (!row) {
       return res.status(404).json({ error: 'Hesap bulunamadı.' });
     }
@@ -98,12 +103,12 @@ authRouter.post('/recovery/verify', async (req, res) => {
   }
 });
 
-authRouter.get('/recovery/question', (req, res) => {
+authRouter.get('/recovery/question', async (req, res) => {
   const email = req.query.email;
   if (!email) {
     return res.status(400).json({ error: 'E-posta gerekli.' });
   }
-  const row = db.prepare('SELECT recovery_question FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  const row = await db.getUserByEmail(email.toLowerCase().trim());
   if (!row) {
     return res.status(404).json({ error: 'Hesap bulunamadı.' });
   }
@@ -116,14 +121,13 @@ authRouter.post('/recovery/reset-password', async (req, res) => {
     if (!userId || !newPassword) {
       return res.status(400).json({ error: 'Eksik alan.' });
     }
-    const row = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+    const row = await db.getUserById(userId);
     if (!row) {
       return res.status(404).json({ error: 'Hesap bulunamadı.' });
     }
     const newPasswordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
-    db.prepare('UPDATE users SET password_hash = ?, recovery_encrypted_key = ? WHERE id = ?')
-      .run(newPasswordHash, newRecoveryEncryptedKey || null, userId);
-    const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(userId);
+    await db.updateUser(userId, { password_hash: newPasswordHash, recovery_encrypted_key: newRecoveryEncryptedKey || null });
+    const user = await db.getUserById(userId);
     const token = signToken(user.id, user.email);
     return res.json({ token, userId: user.id, email: user.email });
   } catch (e) {
@@ -132,23 +136,23 @@ authRouter.post('/recovery/reset-password', async (req, res) => {
   }
 });
 
-authRouter.get('/me', authMiddleware, (req, res) => {
-  const row = db.prepare('SELECT id, email, salt, totp_secret FROM users WHERE id = ?').get(req.userId);
+authRouter.get('/me', authMiddleware, async (req, res) => {
+  const row = await db.getUserById(req.userId);
   if (!row) return res.status(404).json({ error: 'Hesap bulunamadı.' });
   res.json({ userId: row.id, email: row.email, salt: row.salt || '', twoFaEnabled: !!row.totp_secret });
 });
 
-authRouter.get('/2fa/status', authMiddleware, (req, res) => {
-  const row = db.prepare('SELECT totp_secret FROM users WHERE id = ?').get(req.userId);
+authRouter.get('/2fa/status', authMiddleware, async (req, res) => {
+  const row = await db.getUserById(req.userId);
   res.json({ enabled: !!row?.totp_secret });
 });
 
 authRouter.post('/2fa/setup', authMiddleware, async (req, res) => {
   try {
-    const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(req.userId);
+    const user = await db.getUserById(req.userId);
     if (!user) return res.status(404).json({ error: 'Hesap bulunamadı.' });
     const secret = speakeasy.generateSecret({ name: `Şifre Kasası (${user.email})`, length: 20 });
-    db.prepare('UPDATE users SET pending_totp_secret = ? WHERE id = ?').run(secret.base32, req.userId);
+    await db.updateUser(req.userId, { pending_totp_secret: secret.base32 });
     const otpauthUrl = `otpauth://totp/Şifre%20Kasası:${encodeURIComponent(user.email)}?secret=${secret.base32}&issuer=Şifre%20Kasası`;
     const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
     return res.json({ qrDataUrl, secret: secret.base32 });
@@ -158,15 +162,15 @@ authRouter.post('/2fa/setup', authMiddleware, async (req, res) => {
   }
 });
 
-authRouter.post('/2fa/enable', authMiddleware, (req, res) => {
+authRouter.post('/2fa/enable', authMiddleware, async (req, res) => {
   try {
     const { code } = req.body;
     if (!code || typeof code !== 'string') return res.status(400).json({ error: 'Doğrulama kodu gerekli.' });
-    const row = db.prepare('SELECT pending_totp_secret FROM users WHERE id = ?').get(req.userId);
+    const row = await db.getUserById(req.userId);
     if (!row?.pending_totp_secret) return res.status(400).json({ error: 'Önce 2FA kurulumunu başlatın.' });
     const valid = speakeasy.totp.verify({ secret: row.pending_totp_secret, encoding: 'base32', token: code.trim() });
     if (!valid) return res.status(401).json({ error: 'Kod hatalı veya süresi doldu.' });
-    db.prepare('UPDATE users SET totp_secret = ?, pending_totp_secret = NULL WHERE id = ?').run(row.pending_totp_secret, req.userId);
+    await db.updateUser(req.userId, { totp_secret: row.pending_totp_secret, pending_totp_secret: null });
     return res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -178,11 +182,11 @@ authRouter.post('/2fa/disable', authMiddleware, async (req, res) => {
   try {
     const { password } = req.body;
     if (!password) return res.status(400).json({ error: 'Parola gerekli.' });
-    const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.userId);
+    const row = await db.getUserById(req.userId);
     if (!row) return res.status(404).json({ error: 'Hesap bulunamadı.' });
     const ok = await argon2.verify(row.password_hash, password);
     if (!ok) return res.status(401).json({ error: 'Parola hatalı.' });
-    db.prepare('UPDATE users SET totp_secret = NULL, pending_totp_secret = NULL WHERE id = ?').run(req.userId);
+    await db.updateUser(req.userId, { totp_secret: null, pending_totp_secret: null });
     return res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -196,7 +200,7 @@ authRouter.post('/2fa/verify', async (req, res) => {
     if (!tempToken || !code) return res.status(400).json({ error: 'Geçici token ve kod gerekli.' });
     const payload = verifyTempToken(tempToken);
     if (!payload) return res.status(401).json({ error: 'Oturum süresi doldu. Tekrar giriş yapın.' });
-    const row = db.prepare('SELECT id, email, salt FROM users WHERE id = ?').get(payload.userId);
+    const row = await db.getUserById(payload.userId);
     if (!row || !row.totp_secret) return res.status(401).json({ error: 'Doğrulama başarısız.' });
     const valid = speakeasy.totp.verify({ secret: row.totp_secret, encoding: 'base32', token: String(code).trim() });
     if (!valid) return res.status(401).json({ error: 'Kod hatalı veya süresi doldu.' });
@@ -214,12 +218,12 @@ authRouter.put('/me/password', authMiddleware, async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Mevcut ve yeni parola gerekli.' });
     }
-    const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.userId);
+    const row = await db.getUserById(req.userId);
     if (!row) return res.status(404).json({ error: 'Hesap bulunamadı.' });
     const ok = await argon2.verify(row.password_hash, currentPassword);
     if (!ok) return res.status(401).json({ error: 'Mevcut parola hatalı.' });
     const newHash = await argon2.hash(newPassword, { type: argon2.argon2id });
-    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, req.userId);
+    await db.updateUser(req.userId, { password_hash: newHash });
     return res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -230,13 +234,11 @@ authRouter.put('/me/password', authMiddleware, async (req, res) => {
 authRouter.delete('/me', authMiddleware, async (req, res) => {
   try {
     const { password } = req.body;
-    const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.userId);
+    const row = await db.getUserById(req.userId);
     if (!row) return res.status(404).json({ error: 'Hesap bulunamadı.' });
     const ok = await argon2.verify(row.password_hash, password);
     if (!ok) return res.status(401).json({ error: 'Parola hatalı.' });
-    db.prepare('DELETE FROM password_records WHERE user_id = ?').run(req.userId);
-    db.prepare('DELETE FROM user_settings WHERE user_id = ?').run(req.userId);
-    db.prepare('DELETE FROM users WHERE id = ?').run(req.userId);
+    await db.deleteUser(req.userId);
     return res.status(204).send();
   } catch (e) {
     console.error(e);
