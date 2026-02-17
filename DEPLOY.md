@@ -1,70 +1,109 @@
-# Şifre Kasası – İnternete Alma (Deploy)
+# Şifre Kasası – Railway’e Deploy
 
-Backend ve web’i ücretsiz (veya ücretli) hostlara alıp domain almadan kullanabilirsiniz.
-
-## Genel akış
-
-1. **Backend** → Render (veya Railway) üzerinde çalışır → size `https://xxx.onrender.com` gibi bir adres verilir.
-2. **Web** → Vercel’e deploy edilir → `https://sfr-cloud.xxx.vercel.app` gibi adres.
-3. Web build alırken backend adresini ortam değişkeniyle verirsiniz; böylece tarayıcı doğru API’ye istek atar.
+Bu rehber, sfr-cloud uygulamasını **Railway** üzerinde çalıştırmak için adım adım anlatır. SSH veya sunucu yönetimi gerekmez; GitHub’a push ile otomatik deploy olur.
 
 ---
 
-## 1. Backend’i Render’da çalıştırma
+## Ön koşullar
 
-1. [render.com](https://render.com) hesabı açın.
-2. **New → Web Service**.
-3. Repo’yu bağlayın (veya “Deploy an existing image” / manuel deploy).
-4. Ayarlar:
-   - **Build command:** `npm install`
-   - **Start command:** `npm start`
-   - **Root directory:** (proje kökü, backend’in olduğu yer; repo kökü ise boş bırakın)
-5. **Environment:**
-   - `NODE_VERSION` = `20` (veya 18)
-   - `JWT_SECRET` = güçlü rastgele bir metin (üretim için mutlaka kendi değeriniz)
-   - `PORT` = Render otomatik verir, genelde boş bırakılır.
-6. Deploy edin. Servis adresi örn: `https://sfr-cloud-api.onrender.com`.
-
-**Not:** Render ücretsiz planda uygulama bir süre kullanılmazsa uyur; ilk istekte 30–60 sn gecikme olabilir. Kalıcı veritabanı için Render’da disk ekleyebilir veya SQLite yerine ileride PostgreSQL kullanabilirsiniz (şu an SQLite, proje kökünde `sfr.db` oluşur; ücretsiz planda restart’ta silinebilir).
+- [Railway](https://railway.app) hesabı (GitHub ile giriş yapabilirsiniz)
+- Proje **GitHub**’da bir repoda (public veya private)
 
 ---
 
-## 2. Web’i Vercel’de yayınlama
+## Canlıya alma – Hızlı özet
 
-1. [vercel.com](https://vercel.com) hesabı açın.
-2. **Add New → Project** ile repoyu import edin.
-3. **Root Directory** → `web` seçin (web uygulaması `web` klasöründe).
-4. **Build command:** `npm run build`
-   **Output directory:** `dist`
-5. **Environment Variables:**
-   - `VITE_API_URL` = Backend adresiniz (sonunda `/` olmasın), örn: `https://sfr-cloud-api.onrender.com`
-6. Deploy’a basın. Site adresi örn: `https://sfr-cloud-xxx.vercel.app`.
-
-Artık bu adresten giriş yapıp şifrelerinize erişirsiniz; API istekleri `VITE_API_URL` ile Render’daki backend’e gider.
+1. **railway.app** → GitHub ile giriş → **New Project** → **Deploy from GitHub repo** → reponuzu seçin.
+2. **Settings** → **Build Command:** `npm install && npm run build:web` → **Start Command:** `npm start`.
+3. **Variables** → `NODE_ENV=production`, `SERVE_WEB_STATIC=web/dist`, `JWT_SECRET=` (güçlü rastgele metin).
+4. **Settings** → **Networking** → **Generate Domain** ile public URL alın.
+5. Tarayıcıdan bu URL ile erişin; API ve web aynı adreste çalışır.
 
 ---
 
-## 3. Kendi domain’inizi bağlama (isteğe bağlı)
+## 1. Railway hesabı ve proje
 
-- **Vercel:** Project → Settings → Domains → kendi domain’inizi ekleyin (örn. `sifrekasasi.com`). DNS’te Vercel’in verdiği kaydı kullanın.
-- **Render:** Web Service → Settings → Custom Domain → domain’inizi ekleyin.
-
-Böylece ileride ücretsiz adresler kalkarsa sadece DNS’i aynı tutup yeni hosta yönlendirebilirsiniz.
-
----
-
-## 4. iOS ve masaüstü uygulaması
-
-- **iOS:** `AppConfig.swift` (veya ilgili config) içinde `apiBaseURL` değerini production backend adresiniz yapın (örn. `https://sfr-cloud-api.onrender.com`).
-- **Electron masaüstü:** Geliştirme modunda `localhost` kullanır. Paketlenmiş uygulama kendi yerel backend’ini kullanır; “internetten tek hesap” için backend’i Render’a alıp iOS ve web’i aynı API’ye bağlamanız yeterli.
+1. [railway.app](https://railway.app) → **Login** → **Login with GitHub**.
+2. **New Project** → **Deploy from GitHub repo**.
+3. Repoyu seçin (örn. `kayanmetin-alt/sfr-cloud`). Yetki istenirse **Authorize** deyin.
+4. Branch: **main** (veya kullandığınız branch). Railway projeyi çeker ve ilk build’i başlatır.
 
 ---
 
-## 5. Özet kontrol listesi
+## 2. Build ve Start komutları
 
-- [ ] Backend Render’da çalışıyor, adres belli
-- [ ] `JWT_SECRET` production için ayarlandı
-- [ ] Web Vercel’de deploy edildi
-- [ ] `VITE_API_URL` = backend adresi (slash’sız)
-- [ ] Tarayıcıda web adresinden giriş test edildi
-- [ ] İstenirse custom domain eklendi
+İlk deploy muhtemelen başarısız olur çünkü web build alınmamıştır. Ayarları güncelleyin:
+
+1. Açılan **Service**’e tıklayın (veya sol menüden **Service** seçin).
+2. **Settings** sekmesine gidin.
+3. **Build** bölümünde:
+   - **Build Command:** `npm install && npm run build:web`  
+     (Bu komut hem bağımlılıkları kurar hem de `web/dist` oluşturur.)
+4. **Deploy** bölümünde:
+   - **Start Command:** `npm start`  
+     (Varsayılan `node server.js` veya `npm start` ise değiştirmeyin.)
+5. **Save** / değişiklikler otomatik kaydedilir; yeni bir deploy tetiklenir.
+
+---
+
+## 3. Ortam değişkenleri (Variables)
+
+1. Service sayfasında **Variables** sekmesine gidin (veya **Settings** içinde **Variables**).
+2. **Add Variable** veya **RAW Editor** ile şunları ekleyin:
+
+| Değişken | Değer | Zorunlu |
+|----------|--------|---------|
+| `NODE_ENV` | `production` | Evet |
+| `SERVE_WEB_STATIC` | `web/dist` | Evet (web arayüzü için) |
+| `JWT_SECRET` | Güçlü rastgele metin (örn. `openssl rand -base64 32` çıktısı) | Evet |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | (Firestore kullanacaksanız JSON tek satır) | Hayır |
+
+**PORT** Railway tarafından otomatik atanır; tanımlamanız gerekmez.
+
+Kaydettikten sonra deploy yeniden başlayabilir; bitmesini bekleyin.
+
+---
+
+## 4. Public URL (domain)
+
+1. **Settings** → **Networking** (veya **Deployments** sonrası **Generate Domain**).
+2. **Generate Domain**’e tıklayın. Örnek: `sfr-cloud-production.up.railway.app`.
+3. Bu URL hem API hem de web arayüzü için kullanılır (aynı sunucu).
+
+Tarayıcıda bu adresi açarak giriş / kayıt yapabilirsiniz.
+
+---
+
+## 5. Veritabanı (SQLite) hakkında
+
+Varsayılan olarak proje **SQLite** kullanır (`sfr.db`). Railway’de dosya sistemi **geçici** olabilir; redeploy’da veritabanı sıfırlanabilir.
+
+- **Kalıcı veri istiyorsanız:** Railway’de **Volume** ekleyip `SQLITE_PATH` ile veritabanı dosyasını volume içine yönlendirin (Railway dokümantasyonunda “Volumes”).
+- **Test / kişisel kullanım:** Geçici SQLite yeterli olabilir; redeploy’da hesabı yeniden oluşturursunuz.
+
+---
+
+## 6. iOS ve masaüstü
+
+- **iOS:** `AppConfig.swift` içinde `apiBaseURL` değerini Railway domain’iniz yapın (örn. `https://sfr-cloud-production.up.railway.app`). Sonunda `/` olmasın.
+- **Electron masaüstü:** Production’da aynı URL’i kullanabilirsiniz.
+
+---
+
+## 7. Güncelleme
+
+GitHub’a push yaptığınızda Railway otomatik yeni deploy başlatır. Ekstra işlem gerekmez.
+
+---
+
+## Özet kontrol listesi
+
+| Adım | Ne yaptın |
+|------|-----------|
+| 1 | Railway hesabı, GitHub repo bağlandı |
+| 2 | Build: `npm install && npm run build:web`, Start: `npm start` |
+| 3 | Variables: `NODE_ENV`, `SERVE_WEB_STATIC`, `JWT_SECRET` |
+| 4 | Generate Domain ile public URL alındı |
+| 5 | Tarayıcıdan URL ile giriş test edildi |
+
+Uygulama adresi: **https://SERVIS-ADINIZ.up.railway.app**

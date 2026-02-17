@@ -8,6 +8,17 @@ Eski sfr uygulamanızın tüm özelliklerini içeren, veritabanı + web + iOS de
 - **web/**: React (Vite) — tarayıcıdan ve mobil tarayıcıdan erişim
 - **ios/SifreKasasiCloud/**: SwiftUI iOS uygulaması kaynak kodu
 
+## Uygulamayı çalıştırmak için gerekli olanlar
+
+| Ortam | Gerekli |
+|--------|--------|
+| **Yerel (geliştirme)** | Node.js 18+ (tercihen 20), npm. `.env` **zorunlu değil**; veritabanı için varsayılan SQLite kullanılır. |
+| **Canlı (Railway)** | DEPLOY.md’deki adımlar: Railway hesabı, GitHub repo, ortam değişkenleri (JWT_SECRET, SERVE_WEB_STATIC). |
+
+**Yerel hızlı başlangıç:** Proje kökünde `npm install` → `npm run dev` (backend). Ayrı terminalde `cd web` → `npm install` → `npm run dev` (web). Tarayıcıda http://localhost:5173 açın.
+
+---
+
 ## 1. Backend’i çalıştırma
 
 ```bash
@@ -57,15 +68,21 @@ Simülatör aynı makinede çalıştığı için `http://localhost:3001` çalı�
 
 Veriler sunucuda şifreli saklanır; şifreleme anahtarı parolanızdan türetilir (client-side encryption).
 
-## Ortam değişkenleri (isteğe bağlı)
+## Ortam değişkenleri (backend)
 
-- **PORT:** Backend portu (varsayılan 3001)
-- **JWT_SECRET:** Üretimde mutlaka kendi gizli anahtarınızı kullanın
-- **SQLITE_PATH:** Veritabanı dosyasının tam yolu
+| Değişken | Zorunlu? | Açıklama |
+|----------|----------|----------|
+| **PORT** | Hayır | Backend portu (varsayılan 3001) |
+| **JWT_SECRET** | Hayır (yerel) / Evet (canlı) | JWT imzası; canlıda mutlaka güçlü bir değer verin |
+| **SQLITE_PATH** | Hayır | Veritabanı dosyası yolu (varsayılan: proje kökünde `sfr.db`) |
+| **FIREBASE_SERVICE_ACCOUNT_KEY** | Hayır | Tanımlıysa Firestore kullanılır; yoksa SQLite kullanılır |
+| **SERVE_WEB_STATIC** | Sadece canlı | Örn. `web/dist` — backend bu klasörü statik sunar (Railway tek sunucu) |
 
-## Canlıya alma
+## Canlıya alma (Railway)
 
-1. Backend’i bir sunucuya (VPS, Railway, Render vb.) deploy edin; HTTPS kullanın.
-2. Web’i aynı sunucuda veya Netlify/Vercel’de build alıp yayınlayın (`npm run build`, `dist` klasörünü servis edin).
-3. `web` içinde API adresini production URL’e çevirin (örn. `vite.config.js` proxy yerine `import.meta.env.VITE_API_URL` kullanabilirsiniz).
-4. iOS’ta `AppConfig.apiBaseURL`’i production API adresi yapın.
+Detaylı adımlar için **DEPLOY.md** dosyasına bakın. Kısaca:
+
+1. [Railway](https://railway.app) hesabı açın (GitHub ile), **Deploy from GitHub repo** ile reponuzu bağlayın.
+2. Build: `npm install && npm run build:web`, Start: `npm start`; Variables: `NODE_ENV=production`, `SERVE_WEB_STATIC=web/dist`, `JWT_SECRET=` (güçlü değer).
+3. **Generate Domain** ile public URL alın; API ve web aynı adreste çalışır.
+4. iOS’ta `AppConfig.apiBaseURL`’i Railway URL’iniz yapın (örn. `https://xxx.up.railway.app`).

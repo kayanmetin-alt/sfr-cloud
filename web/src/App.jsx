@@ -15,7 +15,7 @@ function RequireAuth({ children }) {
   const { token, user, cryptoKey, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[var(--bg)] px-4">
         <div className="animate-pulse text-[var(--text-muted)]">Yükleniyor…</div>
       </div>
     );

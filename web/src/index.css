@@ -464,6 +464,19 @@ a:hover {
   color: var(--text);
 }
 
+.form-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 1.25rem 0 0.75rem;
+}
+
+.form-section-title:first-child {
+  margin-top: 0;
+}
+
 .form-error {
   font-size: 0.875rem;
   color: var(--danger);

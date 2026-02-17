@@ -44,122 +44,94 @@ export default function Setup() {
     }
   }
 
-  const inputClass =
-    'w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30';
-  const labelClass = 'mb-1.5 block text-sm font-medium text-[var(--text-muted)]';
-
   return (
-    <div className="setup-page min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-[var(--bg)]">
-      <div className="w-full max-w-lg mx-auto">
-        <header className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/20 text-3xl">
-            🔐
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)]">Kasanızı oluşturun</h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">Güçlü bir ana parola belirleyin</p>
-        </header>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-5">
-              Hesap bilgileri
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className={labelClass}>E-posta</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={inputClass}
-                  placeholder="ornek@email.com"
-                  autoComplete="email"
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Ana parola</label>
-                <div className="relative">
-                  <input
-                    type={showPass ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`${inputClass} pr-12`}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)]"
-                    aria-label={showPass ? 'Parolayı gizle' : 'Parolayı göster'}
-                  >
-                    {showPass ? '🙈' : '👁'}
-                  </button>
-                </div>
-                <PasswordStrengthBar password={password} />
-              </div>
-              <div>
-                <label className={labelClass}>Parola (tekrar)</label>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className={inputClass}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-5">
-              Kurtarma
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Güvenlik sorusu</label>
-                <input
-                  type="text"
-                  value={recoveryQuestion}
-                  onChange={(e) => setRecoveryQuestion(e.target.value)}
-                  className={inputClass}
-                  placeholder="Örn: İlk evcil hayvanınızın adı?"
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Cevabı</label>
-                <input
-                  type="text"
-                  value={recoveryAnswer}
-                  onChange={(e) => setRecoveryAnswer(e.target.value)}
-                  className={inputClass}
-                  placeholder="Cevap"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-          </section>
-
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl space-y-4">
-            {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
-            <button
-              type="submit"
+    <div className="login-page">
+      <div className="login-inner">
+        <div className="login-header">
+          <div className="login-logo">🔐</div>
+          <h1 className="login-title">Kasanızı oluşturun</h1>
+          <p className="login-subtitle">Güçlü bir ana parola belirleyin</p>
+        </div>
+        <form onSubmit={handleSubmit} className="login-form-card">
+          <div className="form-section-title">Hesap bilgileri</div>
+          <div className="form-group">
+            <label>E-posta</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="form-input"
+              placeholder="ornek@email.com"
+              autoComplete="email"
               disabled={loading}
-              className="w-full rounded-xl bg-[var(--accent)] py-3.5 font-semibold text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-50"
-            >
-              {loading ? 'Oluşturuluyor…' : 'Kasanı Oluştur'}
-            </button>
-            <p className="text-center text-sm text-[var(--text-muted)]">
-              Zaten hesabınız var mı?{' '}
-              <Link to="/login" className="text-[var(--accent)] hover:underline">
-                Giriş yap
-              </Link>
-            </p>
+            />
+          </div>
+          <div className="form-group">
+            <label>Ana parola</label>
+            <div className="form-input-wrap">
+              <input
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="form-input"
+                placeholder="••••••••"
+                autoComplete="new-password"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="form-toggle-vis"
+                aria-label={showPass ? 'Parolayı gizle' : 'Parolayı göster'}
+              >
+                {showPass ? '🙈' : '👁'}
+              </button>
+            </div>
+            <PasswordStrengthBar password={password} />
+          </div>
+          <div className="form-group">
+            <label>Parola (tekrar)</label>
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="form-input"
+              placeholder="••••••••"
+              autoComplete="new-password"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-section-title">Kurtarma</div>
+          <div className="form-group">
+            <label>Güvenlik sorusu</label>
+            <input
+              type="text"
+              value={recoveryQuestion}
+              onChange={(e) => setRecoveryQuestion(e.target.value)}
+              className="form-input"
+              placeholder="Örn: İlk evcil hayvanınızın adı?"
+              disabled={loading}
+            />
+          </div>
+          <div className="form-group">
+            <label>Cevabı</label>
+            <input
+              type="text"
+              value={recoveryAnswer}
+              onChange={(e) => setRecoveryAnswer(e.target.value)}
+              className="form-input"
+              placeholder="Cevap"
+              disabled={loading}
+            />
+          </div>
+
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? 'Oluşturuluyor…' : 'Kasanı Oluştur'}
+          </button>
+          <div className="login-links">
+            <Link to="/login">Zaten hesabınız var mı? Giriş yap</Link>
           </div>
         </form>
       </div>

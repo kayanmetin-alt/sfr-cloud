@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../lib/api';
 import { validateSetup } from '../lib/validation';
+import { PasswordStrengthBar } from '../components/PasswordStrengthBar';
 
 export default function Recovery() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function Recovery() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   async function handleGetQuestion(e) {
     e.preventDefault();
@@ -79,54 +81,65 @@ export default function Recovery() {
     }
   }
 
+  const subtitles = {
+    1: 'E-posta adresinizi girin',
+    2: 'Güvenlik sorusunu yanıtlayın',
+    3: 'Yeni parola belirleyin',
+  };
+
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-8 text-center">
-          <p className="text-2xl text-[var(--success)]">✓</p>
-          <p className="mt-2 font-semibold text-[var(--text)]">Parola sıfırlandı</p>
-          <p className="text-sm text-[var(--text-muted)]">Yönlendiriliyorsunuz…</p>
+      <div className="login-page">
+        <div className="login-inner">
+          <div className="login-form-card" style={{ textAlign: 'center', padding: '2rem' }}>
+            <p style={{ fontSize: '2rem', margin: 0, color: 'var(--success)' }}>✓</p>
+            <p className="login-title" style={{ marginTop: '1rem', marginBottom: '0.25rem' }}>Parola sıfırlandı</p>
+            <p className="login-subtitle" style={{ margin: 0 }}>Yönlendiriliyorsunuz…</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[var(--text)]">Parola sıfırlama</h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
-            {step === 1 ? 'E-posta adresinizi girin' : step === 2 ? 'Güvenlik sorusunu yanıtlayın' : 'Yeni parola belirleyin'}
-          </p>
+    <div className="login-page">
+      <div className="login-inner">
+        <div className="login-header">
+          <div className="login-logo">🔑</div>
+          <h1 className="login-title">Parola sıfırlama</h1>
+          <p className="login-subtitle">{subtitles[step]}</p>
         </div>
         <form
           onSubmit={step === 1 ? handleGetQuestion : handleVerifyAndReset}
-          className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-xl"
+          className="login-form-card"
         >
           {step === 1 && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">E-posta</label>
+            <div className="form-group">
+              <label>E-posta</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] outline-none focus:border-[var(--accent)]"
+                className="form-input"
                 placeholder="ornek@email.com"
+                autoComplete="email"
                 disabled={loading}
               />
             </div>
           )}
           {step === 2 && (
             <>
-              <p className="text-[var(--text)]">{question || 'Güvenlik sorusu'}</p>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Cevabınız</label>
+              <p className="login-subtitle" style={{ textAlign: 'left', marginBottom: '1rem', marginTop: 0 }}>
+                {question || 'Güvenlik sorusu'}
+              </p>
+              <div className="form-group">
+                <label>Cevabınız</label>
                 <input
                   type="text"
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] outline-none focus:border-[var(--accent)]"
+                  className="form-input"
+                  placeholder="Cevap"
                   disabled={loading}
                 />
               </div>
@@ -134,37 +147,50 @@ export default function Recovery() {
           )}
           {step === 3 && (
             <>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Yeni parola</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] outline-none focus:border-[var(--accent)]"
-                  placeholder="••••••••"
-                  disabled={loading}
-                />
+              <div className="form-group">
+                <label>Yeni parola</label>
+                <div className="form-input-wrap">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="form-input"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="form-toggle-vis"
+                    aria-label={showPass ? 'Parolayı gizle' : 'Parolayı göster'}
+                  >
+                    {showPass ? '🙈' : '👁'}
+                  </button>
+                </div>
+                <PasswordStrengthBar password={newPassword} />
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[var(--text-muted)]">Yeni parola (tekrar)</label>
+              <div className="form-group">
+                <label>Yeni parola (tekrar)</label>
                 <input
-                  type="password"
+                  type={showPass ? 'text' : 'password'}
                   value={newPasswordConfirm}
                   onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text)] outline-none focus:border-[var(--accent)]"
+                  className="form-input"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   disabled={loading}
                 />
               </div>
             </>
           )}
-          {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
-          <div className="flex gap-2">
+          {error && <p className="form-error">{error}</p>}
+          <div className="form-actions">
             {step > 1 && (
               <button
                 type="button"
                 onClick={() => { setStep((s) => s - 1); setError(''); }}
-                className="rounded-xl border border-[var(--border)] px-4 py-3 text-[var(--text-muted)]"
+                className="btn-secondary"
               >
                 Geri
               </button>
@@ -172,17 +198,15 @@ export default function Recovery() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-xl bg-[var(--accent)] py-3 font-semibold text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              className="btn-primary"
             >
               {loading ? '…' : step === 1 ? 'Devam' : step === 2 ? 'Doğrula' : 'Parolayı sıfırla'}
             </button>
           </div>
+          <div className="login-links">
+            <Link to="/login">Girişe dön</Link>
+          </div>
         </form>
-        <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
-          <Link to="/login" className="text-[var(--accent)] hover:underline">
-            Girişe dön
-          </Link>
-        </p>
       </div>
     </div>
   );
